@@ -255,6 +255,8 @@ A backlog item is **Done** only when every applicable box is ticked:
 
 ## Decisions needed from you
 
+> **Resolved 2026-09-30:** all 11 decisions below were accepted as written (see [docs/adr/](../adr/README.md)).
+
 The **[PROPOSED]** items with the most impact on implementation. Please approve, amend or reject each:
 
 1. **ADR-002:** domain-first backend layout (differs from the suggested structure).

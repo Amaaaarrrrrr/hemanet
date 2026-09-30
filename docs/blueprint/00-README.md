@@ -1,6 +1,10 @@
 # HemaNet — Technical & Product Blueprint
 
-**Status:** DRAFT v0.1 — awaiting review and approval. No implementation has started.
+**Status:** v0.1 — architecture decisions ADR-001 to ADR-018 and the 11 decisions in
+[13-delivery-plan.md](13-delivery-plan.md) §"Decisions needed from you" **accepted on 2026-09-30**
+(recorded in [docs/adr/](../adr/README.md)). Clinical rules and items marked [VALIDATE] still require
+stakeholder validation. Implementation is in progress; see
+[docs/development-status.md](../development-status.md) for the current phase.
 **Date:** 2026-09-30
 **Initial deployment context:** Kenya
 **Reference MVP:** `HemaNet MVP.pdf` (4 pages; referred to below as "the PDF")

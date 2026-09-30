@@ -1,6 +1,7 @@
 # 12 — AB. Architectural Decisions and Trade-offs (ADR log)
 
-Status for all: **Proposed** (pending your approval). Once approved, each moves to `docs/adr/ADR-xxx-*.md` as an individual record.
+Status for all: **Accepted** (2026-09-30). Each is now an individual record in
+[`docs/adr/`](../adr/README.md), which is the authoritative copy; later decisions are added there only.
 
 ---
 

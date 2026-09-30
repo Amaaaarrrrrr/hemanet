@@ -1,0 +1,54 @@
+[project]
+name = "hemanet-backend"
+version = "0.0.0"
+description = "HemaNet API and worker (Phase E0 placeholder)."
+readme = "README.md"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "flask>=3.1",
+    "gunicorn>=23",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.12",
+    "mypy>=1.17",
+    "pytest>=8.4",
+    "bandit>=1.8",
+    "pip-audit>=2.9",
+]
+
+[tool.uv]
+# The backend is an application, not an installable library.
+package = false
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = [
+    "E", "W",  # pycodestyle
+    "F",       # pyflakes
+    "I",       # isort
+    "B",       # bugbear
+    "UP",      # pyupgrade
+    "S",       # bandit-style security rules
+    "SIM",     # simplify
+    "RUF",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]  # assert is the pytest idiom
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+files = ["wsgi.py", "worker.py", "tests"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+
+[tool.bandit]
+exclude_dirs = ["tests", ".venv"]
