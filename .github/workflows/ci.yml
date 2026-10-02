@@ -14,11 +14,28 @@ concurrency:
 
 jobs:
   backend:
-    name: Backend (lint, types, tests, security)
+    name: Backend (lint, types, tests, migrations, security)
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: backend
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: hemanet
+          POSTGRES_PASSWORD: ci-ephemeral
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U hemanet"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # Ephemeral CI-only database; tests drop and recreate it (name must end in _test).
+      TEST_DATABASE_URL: postgresql+psycopg://hemanet:ci-ephemeral@127.0.0.1:5432/hemanet_test
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
@@ -28,10 +45,12 @@ jobs:
         run: uv run ruff check .
       - name: Ruff format check
         run: uv run ruff format --check .
+      - name: Import boundaries (import-linter)
+        run: uv run lint-imports
       - name: Mypy (strict)
         run: uv run mypy
-      - name: Tests
-        run: uv run pytest
+      - name: Tests incl. concurrency and migration checks (upgrade, downgrade, drift)
+        run: uv run pytest --cov --cov-report=term
       - name: Bandit
         run: uv run bandit -q -c pyproject.toml -r .
       - name: pip-audit (runtime dependencies)
@@ -87,12 +106,28 @@ jobs:
       - name: Create CI env file from template
         run: cp .env.example .env
       - name: Build and start stack
-        run: docker compose up -d --build --wait --wait-timeout 180
+        run: docker compose up -d --build
+      - name: Wait for readiness (migrations applied, worker heartbeat fresh)
+        run: |
+          for _ in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:8000/readyz | grep -q '"ready"'; then exit 0; fi
+            sleep 3
+          done
+          echo "API never became ready"; exit 1
       - name: Smoke checks
         run: |
-          curl -fsS http://127.0.0.1:8000/ | grep -q '"phase":"E0"'
+          curl -fsS http://127.0.0.1:8000/healthz | grep -q '"ok"'
+          curl -fsS http://127.0.0.1:8000/api/v1/openapi.json | grep -q '"3.1.0"'
           curl -fsS http://127.0.0.1:5173/ | grep -q '<div id="root">'
           curl -fsS http://127.0.0.1:8025/ > /dev/null
+      - name: Worker processes a no-op job
+        run: |
+          docker compose exec -T api flask jobs enqueue-noop
+          for _ in $(seq 1 20); do
+            if docker compose logs worker | grep -q "noop job executed"; then exit 0; fi
+            sleep 2
+          done
+          echo "worker did not run the no-op job"; exit 1
       - name: Logs on failure
         if: failure()
         run: docker compose logs

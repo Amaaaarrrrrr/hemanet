@@ -15,8 +15,11 @@ donors through two related workflows (ADR-006):
 
 ## Current phase
 
-**Phase E0: Repository & tooling.** The stack starts, but the API and worker are placeholders
-with no application functionality. See [docs/development-status.md](docs/development-status.md).
+**Phase E1a: Backend foundation** (awaiting approval). The backend infrastructure is in place
+(configuration, database and migrations, error handling, logging, background jobs and health
+checks), but there is no domain functionality yet: no users, donors, inventory or requests. See
+[docs/development-status.md](docs/development-status.md) and
+[docs/backend-foundation.md](docs/backend-foundation.md).
 
 ## Repository layout
 
@@ -53,26 +56,33 @@ version manager such as nvm. If you use nvm, make sure `node` and `npm` are on y
 shell where you run `make`.
 
 ```bash
-cp .env.example .env        # local placeholders only; .env is git-ignored
-docker compose up -d --build   # or: podman-compose up -d --build   (or: make up)
+make env        # creates .env from .env.example (local placeholders only; git-ignored)
+make install    # backend (uv) and frontend (npm) dependencies from the lock files
+make up         # builds and starts the stack; migrations run automatically first
 ```
 
 | Service | URL | Notes |
 |---|---|---|
-| API | http://127.0.0.1:8000/ | E0 placeholder JSON |
-| Frontend | http://127.0.0.1:5173/ | Vite dev server, E0 placeholder page |
+| API | http://127.0.0.1:8000/healthz, `/readyz` | Reloads on backend code changes |
+| OpenAPI | http://127.0.0.1:8000/api/v1/openapi.json | Generated from code (ADR-014) |
+| Frontend | http://127.0.0.1:5173/ | Vite dev server, placeholder page until E1b |
 | Mailpit | http://127.0.0.1:8025/ | Captures all development email (SMTP on 1025) |
 | PostgreSQL | 127.0.0.1:5432 | Credentials from `.env` |
-| Worker | — | `docker compose logs worker` shows heartbeats |
+| Worker | — | `make logs` shows heartbeats and jobs; `flask jobs enqueue-noop` in the api container queues a test job |
+| migrate | — | One-shot: applies migrations, then exits |
 
-Stop with `docker compose down` (add `-v` to delete the database volume).
+Stop with `make down` (`docker compose down -v` / `podman-compose down -v` also deletes the
+database volume).
 
 ## Testing and checks
 
 ```bash
-make check      # lint, type-check, tests, security audits, format checks
+make check      # lint, import boundaries, type-check, tests, security audits, format checks
 make help       # list all targets
 ```
+
+Backend tests run against the compose PostgreSQL (start it with `make up`), in a separate
+`hemanet_test` database that is recreated on every run.
 
 Or run them per project: see [backend/README.md](backend/README.md) and the `scripts` section of
 `frontend/package.json`. CI runs the same checks plus a gitleaks secret scan and a container-stack
@@ -82,10 +92,13 @@ smoke test.
 
 HemaNet is built in approved phases. Read [CONTRIBUTING.md](CONTRIBUTING.md) before making changes.
 
-## Known limitations (E0)
+## Known limitations (E1a)
 
-- The API, worker and frontend are placeholders; no domain functionality exists yet.
+- There's no domain functionality yet, and the frontend is still a placeholder (E1b).
+- There's no rate limiting yet; it's deferred to E2, when the login and OTP endpoints exist.
 - The frontend container bakes the source into the image; there's no hot reload from host
   files yet.
+- podman-compose doesn't enforce the "migrate finishes first" ordering. The stack still
+  converges, because `/readyz` stays not-ready and the worker retries until the schema exists.
 - There's no production frontend image yet (deployment work is phase E21).
 - The reference `HemaNet MVP.pdf` cited by the blueprint hasn't been added to the repository yet.

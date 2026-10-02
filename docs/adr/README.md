@@ -43,3 +43,4 @@ Records are in two groups:
 | ADR | Title | Phase | Status |
 |---|---|---|---|
 | [ADR-019](ADR-019-tooling-baseline.md) | Tooling baseline | E0 | Accepted |
+| [ADR-020](ADR-020-application-generated-uuidv7.md) | Application-generated UUIDv7 | E1a | Accepted |

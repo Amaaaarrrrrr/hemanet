@@ -1,12 +1,21 @@
 [project]
 name = "hemanet-backend"
 version = "0.0.0"
-description = "HemaNet API and worker (Phase E0 placeholder)."
+description = "HemaNet API and worker."
 readme = "README.md"
 requires-python = ">=3.13,<3.14"
 dependencies = [
     "flask>=3.1",
+    "flask-cors>=6.0",
+    "flask-migrate>=4.1",
+    "flask-smorest>=0.46",
+    "flask-sqlalchemy>=3.1",
     "gunicorn>=23",
+    "marshmallow>=3.26",
+    "psycopg[binary]>=3.2",
+    "pydantic-settings>=2.10",
+    "sqlalchemy>=2.0.40",
+    "structlog>=25.4",
 ]
 
 [dependency-groups]
@@ -16,6 +25,9 @@ dev = [
     "pytest>=8.4",
     "bandit>=1.8",
     "pip-audit>=2.9",
+    "import-linter>=2.3",
+    "pytest-cov>=6.2",
+    "factory-boy>=3.3",
 ]
 
 [tool.uv]
@@ -39,16 +51,50 @@ select = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S101"]  # assert is the pytest idiom
+"tests/**" = ["S101", "S105", "S106"]  # asserts and dummy credentials are fine in tests
 
 [tool.mypy]
 python_version = "3.13"
 strict = true
-files = ["wsgi.py", "worker.py", "tests"]
+files = ["app", "wsgi.py", "worker.py", "migrations", "tests"]
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+# Third-party packages without type information.
+module = ["flask_smorest.*", "flask_migrate.*", "flask_cors.*", "factory.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# flask-smorest route decorators are untyped.
+module = ["app.health", "tests.*"]
+disallow_untyped_decorators = false
+
+[tool.importlinter]
+root_package = "app"
+
+[[tool.importlinter.contracts]]
+name = "core is a shared kernel: it must not depend on jobs or domain modules"
+type = "forbidden"
+source_modules = ["app.core"]
+forbidden_modules = ["app.jobs", "app.modules", "app.health", "app.extensions"]
+
+[[tool.importlinter.contracts]]
+name = "jobs infrastructure must not depend on domain modules"
+type = "forbidden"
+source_modules = ["app.jobs"]
+forbidden_modules = ["app.modules"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra --strict-markers"
+markers = [
+    "concurrency: uses genuinely concurrent database sessions (real commits)",
+]
+filterwarnings = ["error::DeprecationWarning:app.*"]
+
+[tool.coverage.run]
+source = ["app"]
+branch = true
 
 [tool.bandit]
-exclude_dirs = ["tests", ".venv"]
+exclude_dirs = ["tests", ".venv", "migrations"]

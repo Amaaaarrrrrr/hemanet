@@ -39,5 +39,7 @@ personal tokens, production secrets, or **any real donor or patient data**. Only
 
 ## Checks
 
-Run `make check` before asking for review: ruff, ruff format, mypy (strict), pytest, bandit,
-pip-audit, eslint, prettier, tsc (strict), vitest and npm audit.
+Run `make check` before asking for review: ruff, ruff format, import-linter, mypy (strict),
+pytest (against real PostgreSQL; needs `make up`), bandit, pip-audit, eslint, prettier, tsc
+(strict), vitest and npm audit. Backend conventions every module must follow are in
+[docs/backend-foundation.md](docs/backend-foundation.md).
